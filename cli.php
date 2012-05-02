@@ -11,6 +11,8 @@ class CLI
 	protected $_callStructure = array();
 	protected $_requireArgs = false;
 	
+	protected static $_instance = null;
+	
 	const LIGHT_RED		= "[1;31m";
 	const LIGHT_GREEN	= "[1;32m";
 	const YELLOW		= "[1;33m";
@@ -51,7 +53,24 @@ class CLI
 			$this->_callStructure = $callStructure;
 		}
 		
+		$this->__init();
+		
 		$this->runCommand();
+		
+		self::$_instance = $this;
+	}
+	
+	public static function getInstance()
+	{
+		return self::$_instance;
+	}
+	
+	public function __init()
+	{}
+	
+	public function run()
+	{
+		$this->bail('Unhandled controller');
 	}
 	
 	public function hasFlag($flag)
@@ -84,7 +103,7 @@ class CLI
 		return isset($this->arguments[$index]) ? $this->arguments[$index] : false;
 	}
 	
-	public function getInput($prompt = "")
+	static public function getInput($prompt = "")
 	{
 		if ( ! empty($prompt))
 		{
@@ -98,14 +117,14 @@ class CLI
 		return $result;
 	}
 	
-	public function colorText($text, $color = self::NORMAL)
+	static public function colorText($text, $color = self::NORMAL)
 	{
-		if (empty($out))
+		if (empty($color))
 		{
-			$out = self::NORMAL;
+			$color = self::NORMAL;
 		}
 		
-		return chr(27) . $out . $text . chr(27) . self::NORMAL;
+		return chr(27) . $color . $text . chr(27) . self::NORMAL;
 	}
 	
 	protected function runCommand()
@@ -196,43 +215,19 @@ class CLI
 		return $this->flags[$flag] = $arg;
 	}
 	
-	protected function showHelp()
+	protected static function showHelp($die = false)
 	{
-		echo $this->_help;
+		echo trim($this->_help);
+		if ($die)
+		{
+			die();
+		}
+	}
+	
+	protected static function bail($error)
+	{
+		echo self::colorText('ERROR: ', self::RED) . $error;
+		die();
 	}
 	
 }
-
-class XfCli extends CLI
-{
-	
-	protected $_nameSpace = 'XfCli';
-
-	public function run()
-	{
-		echo __CLASS__;
-	}
-	
-}
-
-class XfCli_Add extends CLI
-{
-	
-	public function run()
-	{
-		echo __CLASS__;
-	}
-	
-}
-
-class XfCli_Add_Listener extends CLI
-{
-	
-	public function run()
-	{
-		echo __CLASS__;
-	}
-	
-}
-
-$cli = new XfCli;
