@@ -55,7 +55,7 @@ class CLI
 		
 		$this->__init();
 		
-		$this->runCommand();
+		$this->_run();
 		
 		self::$_instance = $this;
 	}
@@ -127,7 +127,7 @@ class CLI
 		return chr(27) . $color . $text . chr(27) . self::NORMAL;
 	}
 	
-	protected function runCommand()
+	protected function _run()
 	{
 		if ( ! $command = $this->getArgumentAt(0))
 		{
