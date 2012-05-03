@@ -224,7 +224,7 @@ class CLI
 		}
 	}
 	
-	protected static function bail($error)
+	public static function bail($error)
 	{
 		echo self::colorText('ERROR: ', self::RED) . $error;
 		die();
