@@ -7,7 +7,7 @@ class CLI
 	protected $arguments 	= array();
 	
 	protected $_help 		= 'Invalid input';
-	protected $_nameSpace 	= 'CLI';
+	protected $_nameSpace 	= null;
 	protected $_callStructure = array();
 	protected $_requireArgs = false;
 	
@@ -33,10 +33,14 @@ class CLI
 	
 	public function __construct($namespace = null, $arguments = null, $flags = null, $callStructure = null)
 	{
-		if ( ! empty($namespace))
+		self::$_instance = $this;
+		
+		if (empty($namespace) AND empty($this->_nameSpace))
 		{
-			$this->_nameSpace = $namespace;
+			$namespace = get_class($this);
 		}
+		
+		$this->_nameSpace = $namespace;
 		
 		if (is_array($arguments) AND is_array($flags))
 		{
@@ -53,11 +57,9 @@ class CLI
 			$this->_callStructure = $callStructure;
 		}
 		
-		$this->__init();
+		$this->initialize();
 		
 		$this->_run();
-		
-		self::$_instance = $this;
 	}
 	
 	public static function getInstance()
@@ -65,12 +67,12 @@ class CLI
 		return self::$_instance;
 	}
 	
-	public function __init()
+	public function initialize()
 	{}
 	
 	public function run()
 	{
-		$this->bail('Unhandled controller');
+		$this->showHelp();
 	}
 	
 	public function hasFlag($flag)
@@ -217,7 +219,7 @@ class CLI
 	
 	protected static function showHelp($die = false)
 	{
-		echo trim($this->_help);
+		echo trim(self::getInstance()->_help);
 		if ($die)
 		{
 			die();
