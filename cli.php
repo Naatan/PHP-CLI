@@ -105,7 +105,27 @@ class CLI
 		return isset($this->arguments[$index]) ? $this->arguments[$index] : false;
 	}
 	
-	static public function getInput($prompt = "")
+	public static function printInfo($message, $newLine = true)
+	{
+		echo $message;
+		
+		if ($newLine)
+		{
+			echo "\n";
+		}
+	}
+	
+	public static function printDebug($message, $newLine = true)
+	{
+		echo $message;
+		
+		if ($newLine)
+		{
+			echo "\n";
+		}
+	}
+	
+	public static function getInput($prompt = "")
 	{
 		if ( ! empty($prompt))
 		{
@@ -119,7 +139,7 @@ class CLI
 		return $result;
 	}
 	
-	static public function colorText($text, $color = self::NORMAL)
+	public static function colorText($text, $color = self::NORMAL)
 	{
 		if (empty($color))
 		{
@@ -228,7 +248,7 @@ class CLI
 	
 	public static function bail($error)
 	{
-		echo self::colorText('ERROR: ', self::RED) . $error;
+		echo "\n" . self::colorText('ERROR: ', self::RED) . $error . "\n";
 		die();
 	}
 	
