@@ -107,7 +107,7 @@ class CLI
 	
 	public static function printInfo($message, $newLine = true)
 	{
-		echo $message;
+		print_r($message);
 		
 		if ($newLine)
 		{
@@ -117,7 +117,7 @@ class CLI
 	
 	public static function printDebug($message, $newLine = true)
 	{
-		echo $message;
+		print_r($message);
 		
 		if ($newLine)
 		{
@@ -208,26 +208,13 @@ class CLI
 	
 	protected function parseFlag($argv, &$c)
 	{
-		if ( ! preg_match('/^--?([a-z]*?)(?:$|=)(.*)/i', $argv[$c], $matches))
+		if ( ! preg_match('/^--?([a-z-]*?)(?:$|=)(.*)/i', $argv[$c], $matches))
 		{
 			return false;
 		}
 		
 		list($full, $flag, $arg) = $matches;
 		$flag = strtolower($flag);
-		
-		if (empty($arg))
-		{
-			if ( isset($argv[$c+1]) AND substr($argv[$c+1],0,1) != '-')
-			{
-				$arg = $argv[$c+1];
-				$c++;
-			}
-			else
-			{
-				$arg = null;
-			}
-		}
 		
 		if ( ! empty($arg))
 		{
