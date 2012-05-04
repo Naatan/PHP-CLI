@@ -3,8 +3,11 @@
 class CLI
 {
 	
-	protected $flags 		= array();
-	protected $arguments 	= array();
+	protected $args = array(
+		'flags'			=> array(),
+		'arguments' 	=> array(),
+		'options' 		=> array()
+	);
 	
 	protected $_help 		= 'Invalid input';
 	protected $_nameSpace 	= null;
@@ -31,7 +34,7 @@ class CLI
 	const UNDERSCORE	= "[4m";
 	const REVERSE		= "[7m";
 	
-	public function __construct($namespace = null, $arguments = null, $flags = null, $callStructure = null)
+	public function __construct($namespace = null, $arguments = null, $flags = null, $options = null, $callStructure = null)
 	{
 		self::$_instance = $this;
 		
@@ -42,10 +45,11 @@ class CLI
 		
 		$this->_nameSpace = $namespace;
 		
-		if (is_array($arguments) AND is_array($flags))
+		if (is_array($arguments) AND is_array($flags) AND is_array($options))
 		{
-			$this->arguments 	= $arguments;
-			$this->flags 		= $flags;
+			$this->args['arguments'] 	= $arguments;
+			$this->args['flags'] 		= $flags;
+			$this->args['options'] 		= $options;
 		}
 		else
 		{
@@ -77,17 +81,27 @@ class CLI
 	
 	public function hasFlag($flag)
 	{
-		return isset($this->flags[$flag]);
-	}
-	
-	public function getFlag($flag)
-	{
-		return $this->hasFlag($flag) ? $this->flags[$flag] : false;
+		return in_array($flag, $this->args['flags']);
 	}
 	
 	public function getFlags()
 	{
-		return array_keys($this->flags);
+		return $this->args['flags'];
+	}
+	
+	public function hasOption($option)
+	{
+		return isset($this->args['options'][$option]);
+	}
+	
+	public function getOption($option)
+	{
+		return $this->hasOption($option) ? $this->args['options'][$option] : false;
+	}
+	
+	public function getOptions()
+	{
+		return $this->args['options'];
 	}
 	
 	public function hasArgument($argument)
@@ -97,12 +111,12 @@ class CLI
 	
 	public function getArguments()
 	{
-		return $this->arguments;
+		return $this->args['arguments'];
 	}
 	
 	public function getArgumentAt($index)
 	{
-		return isset($this->arguments[$index]) ? $this->arguments[$index] : false;
+		return isset($this->args['arguments'][$index]) ? $this->args['arguments'][$index] : false;
 	}
 	
 	public static function printInfo($message, $newLine = true)
@@ -151,15 +165,13 @@ class CLI
 	
 	protected function _run()
 	{
-		if ( ! $command = $this->getArgumentAt(0))
+		if ($command = $this->getArgumentAt(0))
 		{
-			return $this->run();
+			$class 	= $this->_nameSpace . '_' . ucfirst(strtolower($command));
+			$method = 'run' . ucfirst(strtolower($command));
 		}
 		
-		$class 	= $this->_nameSpace . '_' . ucfirst(strtolower($command));
-		$method = 'run' . ucfirst(strtolower($command));
-		
-		if (class_exists($class))
+		if ($command AND class_exists($class))
 		{
 			$arguments = $this->getArguments();
 			array_shift($arguments);
@@ -167,14 +179,28 @@ class CLI
 			$callStructure 		= $this->_callStructure;
 			$callStructure[] 	= $this;
 			
-			new $class($class, $arguments, $this->flags, $callStructure);
+			new $class($class, $arguments, $this->getFlags(), $this->getOptions(), $callStructure);
 		}
-		else if (method_exists($this, $method))
+		else if ($command AND method_exists($this, $method))
 		{
 			call_user_func(array($this, $method));
 		}
 		else
 		{
+			foreach ($this->args AS $type => $values)
+			{
+				foreach ($values AS $k => $v)
+				{
+					$v = is_numeric($k) ? $v : $k;
+					$method = substr($type,0,-1) . ucfirst(strtolower($v));
+					
+					if (method_exists($this, $method))
+					{
+						call_user_func(array($this, $method));
+					}
+				}
+			}
+			
 			$this->run();
 		}
 	}
@@ -199,16 +225,36 @@ class CLI
 		
 		for ($c=0;$c<count($argv); $c++)
 		{
-			if ( $this->parseFlag($argv, $c) === false)
+			if ( ! $this->parseFlag($argv[$c]) === false)
 			{
-				$this->arguments[] = $argv[$c];
+				continue;
 			}
+			
+			if ( ! $this->parseOption($argv[$c]) === false)
+			{
+				continue;
+			}
+			
+			$this->args['arguments'][] = $argv[$c];
 		}
 	}
 	
-	protected function parseFlag($argv, &$c)
+	protected function parseFlag($argument)
 	{
-		if ( ! preg_match('/^--?([a-z-]*?)(?:$|=)(.*)/i', $argv[$c], $matches))
+		if ( ! preg_match('/^--?([a-z-]*?)$/i', $argument, $matches))
+		{
+			return false;
+		}
+		
+		list($full, $flag) = $matches;
+		$flag = strtolower($flag);
+		
+		return $this->args['flags'][] = $flag;
+	}
+	
+	protected function parseOption($argument)
+	{
+		if ( ! preg_match('/^--?([a-z-]*?)=(.+)$/i', $argument, $matches))
 		{
 			return false;
 		}
@@ -218,10 +264,10 @@ class CLI
 		
 		if ( ! empty($arg))
 		{
-			$arg = preg_replace('/^(?:"|\')(.*?)(?:"|\')$/', '$1', $arg);
+			$arg = preg_replace('/^(?:"|\'|)(.*?)(?:"|\'|)$/', '$1', $arg);
 		}
 		
-		return $this->flags[$flag] = $arg;
+		return $this->args['options'][$flag] = $arg;
 	}
 	
 	protected static function showHelp($die = false)
