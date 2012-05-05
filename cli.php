@@ -502,7 +502,7 @@ abstract class CLI
 		return $this->args['options'][$flag] = $arg;
 	}
 
-	/** Assert Methods ************************************************************************/
+	/** Assert Methods ****************************************************************************/
 
 	/**
 	 * Checks if their are at least $num arguments, if not show help and die
