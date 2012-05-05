@@ -501,5 +501,47 @@ abstract class CLI
 		
 		return $this->args['options'][$flag] = $arg;
 	}
-	
+
+	/** Assert Methods ************************************************************************/
+
+	/**
+	 * Checks if their are at least $num arguments, if not show help and die
+	 * 
+	 * @param  int $num 
+	 * @return void      
+	 */
+	protected function assertNumArguments($num)
+	{
+		if ( ! $this->getArgumentAt($num - 1))
+		{
+			$this->showHelp(true);
+		}
+	}
+
+	/**
+	 * Checks if a certain argument exists, if not shows help and dies
+	 * 
+	 * @param  string $argument 
+	 * @return void           
+	 */
+	protected function assertHasArgument($argument)
+	{
+		if ( ! $this->hasArgument($argument))
+		{
+			$this->showHelp(true);
+		}
+	}
+
+	/**
+	 * Checks if a certain flag exists, if not shows help and dies
+	 * @param  string $flag 
+	 * @return void       
+	 */
+	protected function assertHasFlag($flag)
+	{
+		if ( ! $this->hasFlag($flag))
+		{
+			$this->showHelp(true);
+		}
+	}
 }
