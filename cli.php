@@ -507,7 +507,8 @@ abstract class CLI
 	/**
 	 * Checks if their are at least $num arguments, if not show help and die
 	 * 
-	 * @param  int $num 
+	 * @param  int $num
+	 * 
 	 * @return void      
 	 */
 	protected function assertNumArguments($num)
@@ -521,7 +522,8 @@ abstract class CLI
 	/**
 	 * Checks if a certain argument exists, if not shows help and dies
 	 * 
-	 * @param  string $argument 
+	 * @param  string $argument
+	 * 
 	 * @return void           
 	 */
 	protected function assertHasArgument($argument)
@@ -534,7 +536,9 @@ abstract class CLI
 
 	/**
 	 * Checks if a certain flag exists, if not shows help and dies
-	 * @param  string $flag 
+	 * 
+	 * @param  string $flag
+	 * 
 	 * @return void       
 	 */
 	protected function assertHasFlag($flag)
