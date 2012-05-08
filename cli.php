@@ -123,6 +123,26 @@ abstract class CLI
 		return self::$_instance;
 	}
 	
+	/**
+	 * Get parent class in the hierarchy
+	 *
+	 * eg. when called from within CLI_Command_Subcommand it will return the instance of CLI_Command
+	 * 
+	 * @return	Object|bool							
+	 */
+	public function getParent()
+	{
+		$structure 	= $this->_callStructure;
+		$index 		= count($structure) - 1;
+		
+		if (isset($structure[$index]))
+		{
+			return $structure[$index];
+		}
+		
+		$this->bail('Can\'t call getParent from top level');
+	}
+	
 	/** Abstract methods meant to be overridden ***************************************************/
 	
 	/**
@@ -132,16 +152,6 @@ abstract class CLI
 	 */
 	public function initialize()
 	{}
-	
-	/**
-	 * Run the command, child class should override this
-	 * 
-	 * @return	void							
-	 */
-	public function run()
-	{
-		$this->showHelp();
-	}
 	
 	/** Argument Helpers **************************************************************************/
 	
@@ -165,6 +175,21 @@ abstract class CLI
 	public function getFlags()
 	{
 		return $this->args['flags'];
+	}
+	
+	/**
+	 * Manually define a flag
+	 * 
+	 * @param	string			$flag
+	 * 
+	 * @return	void			
+	 */
+	public function setFlag($flag)
+	{
+		if ( ! $this->hasFlag($flag))
+		{
+			$this->args['flags'][] = $flag;
+		}
 	}
 	
 	/**
@@ -199,6 +224,19 @@ abstract class CLI
 	public function getOptions()
 	{
 		return $this->args['options'];
+	}
+	
+	/**
+	 * Manually define an option
+	 * 
+	 * @param	string			$option			
+	 * @param	string			$value
+	 * 
+	 * @return	void				
+	 */
+	public function setOption($option, $value)
+	{
+		$this->args['options'][$option] = $value;
 	}
 	
 	/**
@@ -332,12 +370,13 @@ abstract class CLI
 	 * Output error message and kill script
 	 * 
 	 * @param	string			$error
+	 * @param 	string 			$type
 	 * 
 	 * @return	void							
 	 */
-	public function bail($error)
+	public function bail($error, $type = 'ERROR')
 	{
-		echo "\n" . self::colorText('ERROR: ', self::RED) . $error . "\n";
+		echo "\n" . $this->colorText($type . ': ', self::RED) . $error . "\n";
 		die();
 	}
 	
@@ -365,6 +404,7 @@ abstract class CLI
 		// Check if the command maps to a class and if so, use that class to execute the command
 		if ($command AND class_exists($class))
 		{
+			
 			$arguments = $this->getArguments();
 			array_shift($arguments);
 			
@@ -372,20 +412,25 @@ abstract class CLI
 			$callStructure[] 	= $this;
 			
 			new $class($class, $arguments, $this->getFlags(), $this->getOptions(), $callStructure);
+			
 		}
-		
-		// Check if the command has it's own dedicated method and execute it
-		else if ($command AND method_exists($this, $method))
+		else 
 		{
+			
+			// Check if the command has it's own dedicated method and execute it
+			if ( ! $command OR ! method_exists($this, $method))
+			{
+				$method = 'run';
+			}
+			
+			if ( ! method_exists($this, $method))
+			{
+				$this->showHelp();
+			}
+			
 			$this->runArgumentMethods();
-			call_user_func(array($this, $method));
-		}
-		
-		// If all else fails just execute it on the local run() method
-		else
-		{
-			$this->runArgumentMethods();
-			$this->run();
+			call_user_func_array(array($this, $method), $this->getArguments());
+			
 		}
 	}
 	
