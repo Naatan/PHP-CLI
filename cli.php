@@ -425,7 +425,6 @@ abstract class CLI
 		// Check if the command maps to a class and if so, use that class to execute the command
 		if ($command AND class_exists($class))
 		{
-			
 			$arguments = $this->getArguments();
 			array_shift($arguments);
 			
