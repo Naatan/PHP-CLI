@@ -41,6 +41,16 @@ abstract class CLI
 	protected static $_instance = null;
 	
 	/**
+	 * @var bool	whether to use exceptions instead of die()
+	 */
+	public static $_useExceptions = false;
+	
+	/**
+	 * @var string	Exception class to use
+	 */
+	public static $_exceptionClass = 'Exception';
+	
+	/**
 	 * Color Constants, for use with self::colorText()
 	 */
 	const LIGHT_RED		= "[1;31m";
@@ -70,11 +80,12 @@ abstract class CLI
 	 * @param	null|array			$arguments		
 	 * @param	null|array			$flags			
 	 * @param	null|array			$options		
-	 * @param	null|array			$callStructure	
+	 * @param	null|array			$callStructure
+	 * @param 	null|bool			$initialize
 	 * 
 	 * @return	void
 	 */
-	public function __construct($namespace = null, $arguments = null, $flags = null, $options = null, $callStructure = null)
+	public function __construct($namespace = null, $arguments = null, $flags = null, $options = null, $callStructure = null, $initialize = true)
 	{
 		self::$_instance = $this;
 		
@@ -106,11 +117,14 @@ abstract class CLI
 			$this->_callStructure = $callStructure;
 		}
 		
-		// Allow child class to run it's initialization before executing the command
-		$this->initialize();
-		
-		// Run the command
-		$this->_run();
+		if ($initialize)
+		{
+			// Allow child class to run it's initialization before executing the command
+			$this->initialize();
+			
+			// Run the command
+			$this->_run();
+		}
 	}
 	
 	/**
@@ -376,8 +390,15 @@ abstract class CLI
 	 */
 	public function bail($error, $type = 'ERROR')
 	{
-		echo "\n" . $this->colorText($type . ': ', self::RED) . $error . "\n";
-		die();
+		if (self::$_useExceptions)
+		{
+			throw new self::$_exceptionClass($error);
+		}
+		else
+		{
+			echo "\n" . $this->colorText($type . ': ', self::RED) . $error . "\n";
+			die();
+		}
 	}
 	
 	/**********************************************************************************************/
