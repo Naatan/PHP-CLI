@@ -289,6 +289,16 @@ abstract class CLI
 	
 	/** Output Helpers ****************************************************************************/
 	
+	public function printMessage($message, $newLine = true)
+	{
+		print_r($message);
+		
+		if ($newLine)
+		{
+			echo "\n";
+		}
+	}
+	
 	/**
 	 * Print info message
 	 * 
@@ -299,12 +309,7 @@ abstract class CLI
 	 */
 	public function printInfo($message, $newLine = true)
 	{
-		print_r($message);
-		
-		if ($newLine)
-		{
-			echo "\n";
-		}
+		$this->printMessage($message, $newLine);
 	}
 	
 	/**
@@ -317,12 +322,7 @@ abstract class CLI
 	 */
 	public function printDebug($message, $newLine = true)
 	{
-		print_r($message);
-		
-		if ($newLine)
-		{
-			echo "\n";
-		}
+		$this->printMessage($message, $newLine);
 	}
 	
 	/**
@@ -356,6 +356,11 @@ abstract class CLI
 	 */
 	public function colorText($text, $color = self::NORMAL)
 	{
+		if ($this->hasFlag('no-colors'))
+		{
+			return $text;
+		}
+		
 		if (empty($color))
 		{
 			$color = self::NORMAL;
@@ -422,6 +427,9 @@ abstract class CLI
 			$method = 'run' . ucfirst(strtolower($command));
 		}
 		
+		// Run methods related to flags, options and arguments
+		$this->runArgumentMethods();
+		
 		// Check if the command maps to a class and if so, use that class to execute the command
 		if ($command AND class_exists($class))
 		{
@@ -443,12 +451,11 @@ abstract class CLI
 				$method = 'run';
 			}
 			
-			if ( ! method_exists($this, $method))
+			if ( ! method_exists($this, $method) OR $this->hasFlag('help'))
 			{
-				$this->showHelp();
+				$this->showHelp(true);
 			}
 			
-			$this->runArgumentMethods();
 			call_user_func_array(array($this, $method), $this->getArguments());
 			
 		}
