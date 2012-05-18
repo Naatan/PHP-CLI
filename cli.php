@@ -76,51 +76,34 @@ abstract class CLI
 	/**
 	 * Class Constructor
 	 * 
-	 * @param	null|string			$namespace		
-	 * @param	null|array			$arguments		
-	 * @param	null|array			$flags			
-	 * @param	null|array			$options		
-	 * @param	null|array			$callStructure
 	 * @param 	null|bool			$initialize
 	 * 
 	 * @return	void
 	 */
-	public function __construct($namespace = null, $arguments = null, $flags = null, $options = null, $callStructure = null, $initialize = true)
+	public function __construct($initialize = true)
 	{
-		self::$_instance = $this;
-		
-		// If no namespace is given use the current class name as the namespace
-		if (empty($namespace) AND empty($this->_nameSpace))
+		if ($initialize instanceof CLI)
 		{
-			$namespace = get_class($this);
+			$arguments = $initialize->getArguments();
+			array_shift($arguments);
+			
+			$callStructure 		= $initialize->getCallStructure();
+			$callStructure[] 	= $initialize;
+			
+			$this->setFlags($initialize->getFlags());
+			$this->setOptions($initialize->getOptions());
+			$this->setArguments($arguments);
+			$this->setCallStructure($callStructure);
 		}
-		
-		// Save namespace
-		$this->_nameSpace = $namespace;
-		
-		// Inherit arguments
-		if (is_array($arguments) AND is_array($flags) AND is_array($options))
-		{
-			$this->args['arguments'] 	= $arguments;
-			$this->args['flags'] 		= $flags;
-			$this->args['options'] 		= $options;
-		}
-		else
+		else if ($initialize == true)
 		{
 			// Parse arguments from user input
 			$this->parseArguments();
 		}
 		
-		// Inherit call structure
-		if ( ! empty($callStructure))
-		{
-			$this->_callStructure = $callStructure;
-		}
-		
 		if ($initialize)
 		{
-			// Allow child class to run it's initialization before executing the command
-			$this->initialize();
+			self::$_instance = $this;
 			
 			// Run the command
 			$this->_run();
@@ -137,24 +120,114 @@ abstract class CLI
 		return self::$_instance;
 	}
 	
+	/** Call Structure Methods ********************************************************************/
+	
+	/**
+	 * Call a custom CLI command
+	 * 
+	 * @param		array|string	$arguments
+	 * @param 		bool 			$merge
+	 * @param		array|bool		$flags			
+	 * @param		array|bool		$options
+	 * 
+	 * @return		void						
+	 */
+	public function manualRun($arguments, $merge = true, $flags = true, $options = true)
+	{
+		$forwardClass = new CLI_Xf(false);
+		
+		// Parse arguments
+		if ( ! is_array($arguments))
+		{
+			$arguments = explode(' ', $arguments);
+		}
+		
+		// Merge current arguments with given
+		if ($merge)
+		{
+			$arguments = array_merge($arguments, $this->getArguments());
+		}
+		
+		// Set arguments
+		$forwardClass->setArguments($arguments);
+		
+		// Set flags
+		if ($flags === true)
+		{
+			$forwardClass->setFlags($this->getFlags());
+		}
+		else if (is_array($flags))
+		{
+			$forwardClass->setFlags($flags);
+		}
+		
+		// Set options
+		if ($options === true)
+		{
+			$forwardClass->setOptions($this->getOptions());
+		}
+		else if (is_array($options))
+		{
+			$forwardClass->setOptions($options);
+		}
+		
+		// Set callstructure
+		$callStructure 		= $this->_callStructure;
+		$callStructure[] 	= $this;
+		
+		$forwardClass->setCallStructure($callStructure);
+		
+		// Run
+		$forwardClass->_run();
+	}
+	
 	/**
 	 * Get parent class in the hierarchy
 	 *
 	 * eg. when called from within CLI_Command_Subcommand it will return the instance of CLI_Command
+	 *
+	 * @param 	null|string 		$name
 	 * 
 	 * @return	Object|bool							
 	 */
-	public function getParent()
+	public function getParent($name = null)
 	{
 		$structure 	= $this->_callStructure;
 		$index 		= count($structure) - 1;
 		
 		if (isset($structure[$index]))
 		{
+			if ($name != null AND get_class($structure[$index]) != $name)
+			{
+				return $structure[$index]->getParent($name);
+			}
+			
 			return $structure[$index];
 		}
 		
-		$this->bail('Can\'t call getParent from top level');
+		$this->bail('Could not locate parent');
+	}
+	
+	/**
+	 * Get call structure
+	 * 
+	 * @return		array				
+	 */
+	public function getCallStructure()
+	{
+		return $this->_callStructure;
+	}
+	
+	/**
+	 * Set call structure
+	 * 
+	 * @param		array		$structure
+	 * 
+	 * @return		array
+	 */
+	public function setCallStructure($structure)
+	{
+		return $this->_callStructure = $structure;
 	}
 	
 	/** Abstract methods meant to be overridden ***************************************************/
@@ -189,6 +262,18 @@ abstract class CLI
 	public function getFlags()
 	{
 		return $this->args['flags'];
+	}
+	
+	/**
+	 * Set custom flags
+	 * 
+	 * @param		array		$flags
+	 * 
+	 * @return		array					
+	 */
+	public function setFlags(array $flags)
+	{
+		return $this->args['flags'] = $flags;
 	}
 	
 	/**
@@ -254,6 +339,18 @@ abstract class CLI
 	}
 	
 	/**
+	 * Set options, overrides current value
+	 * 
+	 * @param		array		$options
+	 * 
+	 * @return		array						
+	 */
+	public function setOptions(array $options)
+	{
+		return $this->args['options'] = $options;
+	}
+	
+	/**
 	 * Check if given argument was used
 	 * 
 	 * @param	string			$argument
@@ -285,6 +382,18 @@ abstract class CLI
 	public function getArgumentAt($index)
 	{
 		return isset($this->args['arguments'][$index]) ? $this->args['arguments'][$index] : false;
+	}
+	
+	/**
+	 * Set arguments, overrides current value
+	 * 
+	 * @param		array		$arguments
+	 * 
+	 * @return		array						
+	 */
+	public function setArguments(array $arguments)
+	{
+		return $this->args['arguments'] = $arguments;
 	}
 	
 	/** Output Helpers ****************************************************************************/
@@ -378,7 +487,13 @@ abstract class CLI
 	 */
 	public function showHelp($die = false)
 	{
-		echo trim(self::getInstance()->_help);
+		$help = self::getInstance()->_help;
+		
+		preg_match('/^\n*(\s*)/', $help, $whitespace);
+		$help = preg_replace('/^'.$whitespace[1].'/m', '', $help);
+		
+		echo trim($help);
+		
 		if ($die)
 		{
 			die();
@@ -406,10 +521,6 @@ abstract class CLI
 		}
 	}
 	
-	/**********************************************************************************************/
-	/** PROTECTED METHODS *************************************************************************/
-	/**********************************************************************************************/
-	
 	/** Execution *********************************************************************************/
 	
 	/**
@@ -418,12 +529,15 @@ abstract class CLI
 	 * 
 	 * @return	void							
 	 */
-	protected function _run()
+	public function _run()
 	{
+		// Allow child class to run it's initialization before executing the command
+		$this->initialize();
+			
 		// Retrieve command that is to be executed
 		if ($command = $this->getArgumentAt(0))
 		{
-			$class 	= $this->_nameSpace . '_' . ucfirst(strtolower($command));
+			$class 	= get_class($this) . '_' . ucfirst(strtolower($command));
 			$method = 'run' . ucfirst(strtolower($command));
 		}
 		
@@ -433,20 +547,19 @@ abstract class CLI
 		// Check if the command maps to a class and if so, use that class to execute the command
 		if ($command AND class_exists($class))
 		{
-			$arguments = $this->getArguments();
-			array_shift($arguments);
-			
-			$callStructure 		= $this->_callStructure;
-			$callStructure[] 	= $this;
-			
-			new $class($class, $arguments, $this->getFlags(), $this->getOptions(), $callStructure);
-			
+			new $class($this);
 		}
 		else 
 		{
 			
 			// Check if the command has it's own dedicated method and execute it
-			if ( ! $command OR ! method_exists($this, $method))
+			if ( $command AND method_exists($this, $method))
+			{
+				$arguments = $this->getArguments();
+				array_shift($arguments);
+				$this->setArguments($arguments);
+			}
+			else
 			{
 				$method = 'run';
 			}
