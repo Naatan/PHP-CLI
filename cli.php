@@ -18,7 +18,7 @@ abstract class CLI
 	/**
 	 * @var string	The default help to show for the currently executed command
 	 */
-	protected $_help 		= 'Invalid input';
+	protected $_help 		= false;
 	
 	/**
 	 * @var string	The namespace that we are executing commands in
@@ -435,6 +435,127 @@ abstract class CLI
 	}
 	
 	/**
+	 * Print a key / value list
+	 * 
+	 * @param		array		$list		
+	 * @param		string		$prefix
+	 * 
+	 * @return		void					
+	 */
+	public function printKeyList($list, $prefix = ' * ')
+	{
+		$longest = 0;
+		
+		foreach ($list AS $k => $v)
+		{
+			if (strlen($k) > $longest)
+			{
+				$longest = strlen($k);
+			}
+		}
+		
+		$longest += 5;
+		
+		foreach ($list AS $k => $v)
+		{
+			$n 		= $longest - strlen($k);
+			$append	= '';
+			
+			for ($c=0;$c<$n; $c++)
+			{
+				$append .= ' ';
+			}
+			
+			echo $prefix . $k . ': ' . $append . $v;
+			echo PHP_EOL;
+		}
+	}
+	
+	/**
+	 * Print array as table
+	 * 
+	 * @param		array		$array
+	 * @param 		string 		$prefix
+	 * @param 		bool 		$headers
+	 * 
+	 * @return		void					
+	 */
+	public function printTable($array, $prefix = '', $headers = true)
+	{
+		$longest = array();
+		
+		// Calculate column length
+		foreach ($array AS $entry)
+		{
+			foreach ($entry AS $k => $v)
+			{
+				$v = preg_replace('/\[[0-9;]{1,4}m/','', $v);
+				if ( ! isset($longest[$k]) OR $longest[$k] < (strlen($v) + 5))
+				{
+					$longest[$k] = strlen($v) + 5;
+				}
+				
+				if ( $headers AND ( ! isset($longest[$k]) OR $longest[$k] < (strlen($k) + 5)))
+				{
+					$longest[$k] = strlen($k) + 5;
+				}
+			}
+		}
+		
+		// Print headers
+		if ($headers)
+		{
+			foreach (current($array) AS $k => $v)
+			{
+				$append = '';
+				$n 		= $longest[$k] - strlen($k);
+				for ($c=0;$c<$n; $c++) $append .= ' ';
+				
+				echo $this->colorText($k, self::BOLD) . $append;
+			}
+			
+			echo PHP_EOL;
+			$append = '';
+			foreach ($longest AS $length)
+			{
+				for ($c=0;$c<$length; $c++) $append .= '-';
+			}
+			
+			echo substr($append,0,-5);
+		}
+		
+		// Print entries
+		foreach ($array AS $entry)
+		{
+			echo PHP_EOL;
+			
+			foreach ($entry AS $k => $v)
+			{
+				$append = '';
+				$n 		= $longest[$k] - strlen($v);
+				for ($c=0;$c<$n; $c++) $append .= ' ';
+				
+				echo $v . $append;
+			}
+		}
+	}
+	
+	/**
+	 * Print empty lines
+	 * 
+	 * @param		int		$lines
+	 * 
+	 * @return		void			
+	 */
+	public function printEmptyLine($lines=1)
+	{
+		for ($c=0;$c<$lines; $c++)
+		{
+			echo "\n";
+		}
+	}
+	
+	/**
 	 * Get input from user
 	 * 
 	 * @param	string			$prompt
@@ -453,6 +574,34 @@ abstract class CLI
 		$result = trim($line);
 		
 		return $result;
+	}
+	
+	/**
+	 * User Confirmation
+	 * 
+	 * @param	string			$prompt
+	 * 
+	 * @return	string							
+	 */
+	public function confirm($prompt = "")
+	{
+		if ( ! empty($prompt))
+		{
+			echo trim($prompt) . " ";
+		}
+		
+		$handle = fopen ("php://stdin","r");
+		$line 	= fgets($handle);
+		$result = trim($line);
+		
+		$true = array('1', 'yes','y','ok');
+		
+		if (in_array($result, $true))
+		{
+			return true;
+		}
+		
+		return false;
 	}
 	
 	/**
@@ -492,7 +641,14 @@ abstract class CLI
 		preg_match('/^\n*(\s*)/', $help, $whitespace);
 		$help = preg_replace('/^'.$whitespace[1].'/m', '', $help);
 		
-		echo trim($help);
+		if ( ! $help)
+		{
+			throw new Exception('Invalid input');
+		}
+		else
+		{
+			echo trim($help);
+		}
 		
 		if ($die)
 		{
@@ -605,7 +761,7 @@ abstract class CLI
 	 * 
 	 * @return	void							
 	 */
-	protected function parseArguments()
+	public function parseArguments()
 	{
 		global $argc, $argv;
 		
