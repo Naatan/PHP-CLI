@@ -10,66 +10,66 @@ abstract class CLI
 	 * @var array	Argument types
 	 */
 	protected $args = array(
-		'flags'			=> array(), 	// eg. -f, --flag
-		'options' 		=> array(),		// eg. -f=foo, --foo=bar, --foo="bar"
-		'arguments' 	=> array()		// everything else
+		'flags'	 		=> array(), 	// eg. -f, --flag
+		'options' 		=> array(),	 	// eg. -f=foo, --foo=bar, --foo="bar"
+		'arguments' 	=> array() 		// everything else
 	);
 	
 	/**
-	 * @var string	The default help to show for the currently executed command
+	 * @var string 	The default help to show for the currently executed command
 	 */
-	protected $_help 		= false;
+	protected $_help 				= false;
 	
 	/**
-	 * @var string	The namespace that we are executing commands in
+	 * @var string 	The namespace that we are executing commands in
 	 */
-	protected $_nameSpace 	= null;
+	protected $_nameSpace 			= null;
 	
 	/**
-	 * @var array	Hierarchy of class instances that lead up to this one
+	 * @var array 	Hierarchy of class instances that lead up to this one
 	 */
-	protected $_callStructure = array();
+	protected $_callStructure 		= array();
 	
 	/**
-	 * @var bool	If set to true defaults to showing help if the command is executed without any arguments
+	 * @var bool 	If set to true defaults to showing help if the command is executed without any arguments
 	 */
-	protected $_requireArgs = false;
+	protected $_requireArgs 		= false;
 	
 	/**
 	 * @var object|null	Instance of current class, for use in static methods
 	 */
-	protected static $_instance = null;
+	protected static $_instance 	= null;
 	
 	/**
-	 * @var bool	whether to use exceptions instead of die()
+	 * @var bool 	whether to use exceptions instead of die()
 	 */
-	public static $_useExceptions = false;
+	public static $_useExceptions 	= false;
 	
 	/**
-	 * @var string	Exception class to use
+	 * @var string 	Exception class to use
 	 */
-	public static $_exceptionClass = 'Exception';
+	public static $_exceptionClass 	= 'Exception';
 	
 	/**
 	 * Color Constants, for use with self::colorText()
 	 */
-	const LIGHT_RED		= "[1;31m";
-	const LIGHT_GREEN	= "[1;32m";
-	const YELLOW		= "[1;33m";
-	const LIGHT_BLUE	= "[1;34m";
-	const MAGENTA		= "[1;35m";
-	const LIGHT_CYAN	= "[1;36m";
-	const WHITE			= "[1;37m";
-	const NORMAL		= "[0m";
-	const BLACK			= "[0;30m";
-	const RED			= "[0;31m";
-	const GREEN			= "[0;32m";
-	const BROWN			= "[0;33m";
-	const BLUE			= "[0;34m";
-	const CYAN			= "[0;36m";
-	const BOLD			= "[1m";
-	const UNDERSCORE	= "[4m";
-	const REVERSE		= "[7m";
+	const LIGHT_RED 	= "[1;31m";
+	const LIGHT_GREEN 	= "[1;32m";
+	const YELLOW 		= "[1;33m";
+	const LIGHT_BLUE 	= "[1;34m";
+	const MAGENTA 		= "[1;35m";
+	const LIGHT_CYAN 	= "[1;36m";
+	const WHITE 		= "[1;37m";
+	const NORMAL 		= "[0m";
+	const BLACK 		= "[0;30m";
+	const RED 			= "[0;31m";
+	const GREEN 		= "[0;32m";
+	const BROWN 		= "[0;33m";
+	const BLUE 			= "[0;34m";
+	const CYAN 			= "[0;36m";
+	const BOLD 			= "[1m";
+	const UNDERSCORE 	= "[4m";
+	const REVERSE 		= "[7m";
 	
 	/** Main class constructors *******************************************************************/
 	
@@ -640,6 +640,11 @@ abstract class CLI
 		
 		preg_match('/^\n*(\s*)/', $help, $whitespace);
 		$help = preg_replace('/^'.$whitespace[1].'/m', '', $help);
+		
+		while (preg_match('/^(\s*?)\t/m', $help))
+		{
+			$help = preg_replace('/^(\s*?)\t/m', '$1  ', $help);
+		}
 		
 		if ( ! $help)
 		{
